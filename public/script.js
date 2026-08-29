@@ -12,10 +12,11 @@ let currentUser = null;
 let currentFolder = 'inbox';
 
 window.addEventListener('DOMContentLoaded', () => {
-    const savedUser = localStorage.getItem('tmail_current_user');
+    const savedUser = localStorage.getItem('tmail_device_user');
     if (savedUser) {
         currentUser = JSON.parse(savedUser);
         loadApp(currentUser);
+        syncIncomingMail(); // Check server for shared files on load
     }
 });
 
@@ -38,19 +39,20 @@ function handleSignup(event) {
         color: avatarColor
     };
 
-    let allMailboxes = JSON.parse(localStorage.getItem('tmail_global_mailboxes')) || {};
-    if (!allMailboxes[secretTmail]) {
-        allMailboxes[secretTmail] = {
+    // Initialize local device storage for this account if it doesn't exist
+    const storageKey = `tmail_data_${secretTmail}`;
+    if (!localStorage.getItem(storageKey)) {
+        const initialMailbox = {
             inbox: [
-                { id: Date.now(), sender: 'Tmail Team', recipient: secretTmail, subject: 'Welcome to Tmail!', snippet: 'Your secret tmail address is ready to use.', body: `Welcome ${username}!\n\nYour secret Tmail address is ${secretTmail}. Anyone on Tmail can message you using this address.` }
+                { id: Date.now(), sender: 'Tmail Team', recipient: secretTmail, subject: 'Welcome to Tmail!', snippet: 'Your device-stored inbox is ready.', body: `Welcome ${username}!\n\nYour emails now live directly on your device storage. When friends send files/messages, sync them from the drop-box.` }
             ],
             sent: [],
             drafts: []
         };
-        localStorage.setItem('tmail_global_mailboxes', JSON.stringify(allMailboxes));
+        localStorage.setItem(storageKey, JSON.stringify(initialMailbox));
     }
 
-    localStorage.setItem('tmail_current_user', JSON.stringify(currentUser));
+    localStorage.setItem('tmail_device_user', JSON.stringify(currentUser));
     
     document.getElementById('username-input').value = '';
     document.getElementById('password-input').value = '';
@@ -91,7 +93,7 @@ window.addEventListener('click', () => {
 });
 
 function handleLogout() {
-    localStorage.removeItem('tmail_current_user');
+    localStorage.removeItem('tmail_device_user');
     currentUser = null;
     
     document.getElementById('app-screen').classList.add('hidden');
@@ -106,31 +108,53 @@ function switchFolder(folder) {
     renderEmailList();
 }
 
-function getMyMailbox() {
-    let allMailboxes = JSON.parse(localStorage.getItem('tmail_global_mailboxes')) || {};
+function getDeviceMailbox() {
     if (!currentUser) return { inbox: [], sent: [], drafts: [] };
-    if (!allMailboxes[currentUser.tmail]) {
-        allMailboxes[currentUser.tmail] = { inbox: [], sent: [], drafts: [] };
-    }
-    return allMailboxes[currentUser.tmail];
+    const storageKey = `tmail_data_${currentUser.tmail}`;
+    let data = localStorage.getItem(storageKey);
+    return data ? JSON.parse(data) : { inbox: [], sent: [], drafts: [] };
 }
 
-function saveMyMailbox(mailbox) {
-    let allMailboxes = JSON.parse(localStorage.getItem('tmail_global_mailboxes')) || {};
-    allMailboxes[currentUser.tmail] = mailbox;
-    localStorage.setItem('tmail_global_mailboxes', JSON.stringify(allMailboxes));
+function saveDeviceMailbox(mailbox) {
+    if (!currentUser) return;
+    const storageKey = `tmail_data_${currentUser.tmail}`;
+    localStorage.setItem(storageKey, JSON.stringify(mailbox));
+}
+
+// Sync function: Downloads shared file packages from the server drop-box into device memory
+async function syncIncomingMail() {
+    if (!currentUser) return;
+    try {
+        const response = await fetch(`/api/fetch-mail/${currentUser.tmail}`);
+        const data = await response.json();
+        
+        if (data.packages && data.packages.length > 0) {
+            let mailbox = getDeviceMailbox();
+            data.packages.forEach(pkg => {
+                // Avoid duplicate entries
+                if (!mailbox.inbox.some(m => m.id === pkg.id)) {
+                    mailbox.inbox.push(pkg);
+                }
+            });
+            saveDeviceMailbox(mailbox);
+            renderEmailList();
+        }
+    } catch (e) {
+        console.error('Sync failed', e);
+    }
 }
 
 function updateCounts() {
-    const mailbox = getMyMailbox();
+    const mailbox = getDeviceMailbox();
     document.getElementById('inbox-count').innerText = mailbox.inbox.length;
     document.getElementById('sent-count').innerText = mailbox.sent.length;
     document.getElementById('drafts-count').innerText = mailbox.drafts.length;
 }
 
 function renderEmailList() {
+    syncIncomingMail(); // Auto check for incoming shared files when rendering
     const container = document.getElementById('main-content-area');
-    const mailbox = getMyMailbox();
+    const mailbox = getDeviceMailbox();
     const folderList = mailbox[currentFolder] || [];
 
     if (folderList.length === 0) {
@@ -155,7 +179,7 @@ function renderEmailList() {
 }
 
 function openEmail(folder, index) {
-    const mailbox = getMyMailbox();
+    const mailbox = getDeviceMailbox();
     const email = mailbox[folder][index];
     const container = document.getElementById('main-content-area');
 
@@ -184,7 +208,7 @@ function closeCompose() {
     document.getElementById('compose-body-text').value = '';
 }
 
-function sendEmail() {
+async function sendEmail() {
     const recipient = document.getElementById('compose-to').value.trim().toLowerCase();
     const subject = document.getElementById('compose-subject').value.trim() || '(No Subject)';
     const body = document.getElementById('compose-body-text').value.trim();
@@ -194,7 +218,7 @@ function sendEmail() {
         return;
     }
 
-    const newEmail = {
+    const emailPackage = {
         id: Date.now(),
         sender: currentUser.tmail,
         recipient: recipient,
@@ -203,22 +227,31 @@ function sendEmail() {
         body: body
     };
 
-    let mailbox = getMyMailbox();
-    mailbox.sent.push(newEmail);
-    saveMyMailbox(mailbox);
+    try {
+        // Share the file package to the server drop-box
+        const response = await fetch('/api/send-file', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ recipient, emailPackage })
+        });
 
-    let allMailboxes = JSON.parse(localStorage.getItem('tmail_global_mailboxes')) || {};
-    if (allMailboxes[recipient]) {
-        allMailboxes[recipient].inbox.push(newEmail);
-        localStorage.setItem('tmail_global_mailboxes', JSON.stringify(allMailboxes));
-    } else {
-        allMailboxes[recipient] = { inbox: [newEmail], sent: [], drafts: [] };
-        localStorage.setItem('tmail_global_mailboxes', JSON.stringify(allMailboxes));
+        const result = await response.json();
+        if (!response.ok) {
+            alert(result.error || 'Failed to send file package.');
+            return;
+        }
+
+        // Save a copy to local device 'sent' folder
+        let mailbox = getDeviceMailbox();
+        mailbox.sent.push(emailPackage);
+        saveDeviceMailbox(mailbox);
+
+        closeCompose();
+        renderEmailList();
+        alert('Message file shared successfully!');
+    } catch (e) {
+        alert('Network error while sharing file.');
     }
-
-    closeCompose();
-    renderEmailList();
-    alert('Message sent successfully!');
 }
 
 function saveDraft() {
@@ -235,12 +268,11 @@ function saveDraft() {
         body: body
     };
 
-    let mailbox = getMyMailbox();
+    let mailbox = getDeviceMailbox();
     mailbox.drafts.push(draftEmail);
-    saveMyMailbox(mailbox);
+    saveDeviceMailbox(mailbox);
 
     closeCompose();
     renderEmailList();
-    alert('Draft saved!');
+    alert('Draft saved locally!');
 }
-  
