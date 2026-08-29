@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tmail</title>
+    <style>
+        :root {
+            --google-blue: #4285F4;
+            --google-red: #EA4335;
+            --google-yellow: #FBBC05;
+            --google-green: #34A853;
+            --border-color: #dadce0;
+            --text-main: #202124;
+            --bg-hover: #f1f3f4;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #ffffff;
+            color: var(--text-main);
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* --- AUTH SCREEN --- */
+        #auth-screen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            height: 100dvh;
+            background-color: #f8f9fa;
+            padding: 16px;
+        }
+
+        .auth-card {
+            background: #fff;
+            padding: 32px 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .logo-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 2px;
+            font-size: 38px;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+
+        .logo-t {
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--google-blue) 25%, var(--google-red) 50%, var(--google-yellow) 75%, var(--google-green) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .auth-card h1 {
+            font-size: 22px;
+            font-weight: 400;
+            margin-bottom: 8px;
+        }
+
+        .auth-card p {
+            color: #5f6368;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+            text-align: left;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 16px;
+            outline: none;
+            transition: border 0.2s;
+        }
+
+        .input-group input:focus {
+            border-color: var(--google-blue);
+            box-shadow: 0 0 0 1px var(--google-blue);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--google-blue);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        /* --- DASHBOARD INTERFACE --- */
+        #app-screen {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 16px;
+            border-bottom: 1px solid var(--border-color);
+            height: 60px;
+            background: #fff;
+            z-index: 10;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-logo {
+            font-size: 20px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .header-right {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .profile-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .profile-menu {
+            position: absolute;
+            top: 45px;
+            right: 0;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            width: 260px;
+            padding: 16px;
+            text-align: center;
+            z-index: 200;
+        }
+
+        .profile-menu .menu-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            font-weight: 500;
+            margin: 0 auto 8px auto;
+        }
+
+        .profile-menu .menu-username {
+            font-weight: 500;
+            font-size: 15px;
+        }
+
+        .profile-menu .menu-email {
+            font-size: 12px;
+            color: #5f6368;
+            margin-bottom: 16px;
+            word-break: break-all;
+        }
+
+        .btn-logout {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #d93025;
+            font-weight: 500;
+            width: 100%;
+        }
+
+        /* --- LAYOUT & RESPONSIVE NAVIGATION --- */
+        .main-layout {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Sidebar behaves as a bottom navigation bar on mobile */
+        sidebar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: #fff;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: row;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 8px;
+            z-index: 50;
+        }
+
+        .compose-btn {
+            position: fixed;
+            bottom: 76px;
+            right: 16px;
+            background: #c2e7ff;
+            color: #001d35;
+            border-radius: 16px;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            z-index: 60;
+            border: none;
+        }
+
+        .nav-item {
+            padding: 8px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            color: #444746;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            flex: 1;
+            text-align: center;
+        }
+
+        .nav-item span:nth-child(2) {
+            font-size: 10px;
+        }
+
+        .nav-item.active {
+            background-color: #d3e3fd;
+            color: #041e49;
+        }
+
+        .content-area {
+            flex: 1;
+            background-color: #f8f9fa;
+            padding: 12px;
+            padding-bottom: 75px; /* clear bottom navigation */
+            overflow-y: auto;
+            width: 100%;
+        }
+
+        .email-list {
+            background: white;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .email-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            font-size: 13px;
+            gap: 10px;
+        }
+
+        .email-item:last-child {
+            border-bottom: none;
+        }
+
+        .email-sender {
+            font-weight: 500;
+            width: 110px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .email-snippet {
+            color: #5f6368;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+
+        .empty-folder {
+            text-align: center;
+            padding: 40px 16px;
+            color: #5f6368;
+            font-size: 14px;
+        }
+
+        /* --- COMPOSE MODAL POPUP (FULLSCREEN ON MOBILE) --- */
+        .compose-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            height: 100dvh;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            z-index: 300;
+        }
+
+        .compose-header {
+            background: #f8f9fa;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 500;
+            font-size: 16px;
+            color: #202124;
+        }
+
+        .compose-header span {
+            cursor: pointer;
+            padding: 4px 8px;
+        }
+
+        .compose-body {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .compose-body input, .compose-body textarea {
+            width: 100%;
+            border: none;
+            border-bottom: 1px solid var(--border-color);
+            padding: 14px 16px;
+            outline: none;
+            font-size: 15px;
+            background: transparent;
+        }
+
+        .compose-body textarea {
+            flex: 1;
+            resize: none;
+            border-bottom: none;
+        }
+
+        .compose-footer {
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border-color);
+            background: #fff;
+        }
+
+        .btn-send {
+            background-color: var(--google-blue);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 20px;
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        /* --- EMAIL READER VIEW --- */
+        .email-reader {
+            background: white;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            width: 100%;
+            padding: 16px;
+            min-height: 100%;
+        }
+
+        .reader-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 12px;
+        }
+
+        .btn-back {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+
+        /* --- DESKTOP ADAPTATION MEDIA QUERY --- */
+        @media (min-width: 768px) {
+            body {
+                background-color: #f8f9fa;
+            }
+            #auth-screen {
+                padding: 0;
+            }
+            #app-screen {
+                max-width: 1200px;
+                margin: 0 auto;
+                height: 100vh;
+                background: #fff;
+                box-shadow: 0 0 20px rgba(0,0,0,0.05);
+            }
+            sidebar {
+                position: static;
+                width: 256px;
+                height: auto;
+                border-top: none;
+                border-right: 1px solid var(--border-color);
+                flex-direction: column;
+                justify-content: flex-start;
+                align-items: stretch;
+                padding: 8px;
+                background: transparent;
+            }
+            .compose-btn {
+                position: static;
+                border-radius: 24px;
+                padding: 12px 24px;
+                width: fit-content;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                margin-bottom: 16px;
+            }
+            .nav-item {
+                flex-direction: row;
+                justify-content: space-between;
+                padding: 10px 16px;
+                border-radius: 0 16px 16px 0;
+                font-size: 14px;
+                flex: unset;
+                text-align: left;
+            }
+            .nav-item span:nth-child(2) {
+                font-size: 13px;
+            }
+            .content-area {
+                padding: 16px;
+            }
+            .compose-modal {
+                position: fixed;
+                bottom: 0;
+                right: 60px;
+                top: auto;
+                width: 500px;
+                height: 480px;
+                border-radius: 8px 8px 0 0;
+                border: 1px solid var(--border-color);
+                box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            }
+            .compose-header {
+                border-radius: 8px 8px 0 0;
+                background: #f2f6fc;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="auth-screen">
+        <div class="auth-card">
+            <div class="logo-container">
+                <span class="logo-t">T</span><span>mail</span>
+            </div>
+            <h1>Welcome to Tmail</h1>
+            <p>Create an account to start messaging</p>
+            <form id="signup-form" onsubmit="handleSignup(event)">
+                <div class="input-group">
+                    <input type="text" id="username-input" placeholder="Choose a username" required autocomplete="off">
+                </div>
+                <div class="input-group">
+                    <input type="password" id="password-input" placeholder="Choose a password" required>
+                </div>
+                <button type="submit" class="btn-primary">Done</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="app-screen" class="hidden">
+        <header>
+            <div class="header-left">
+                <div class="header-logo">
+                    <span class="logo-t" style="font-size: 24px;">T</span><span>mail</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <div id="user-avatar" class="profile-avatar" onclick="toggleMenu(event)">A</div>
+                
+                <div id="profile-menu" class="profile-menu hidden">
+                    <div id="menu-avatar-large" class="menu-avatar">A</div>
+                    <div id="menu-username-display" class="menu-username">Username</div>
+                    <div id="menu-email-display" class="menu-email">username@tmail.com</div>
+                    <button class="btn-logout" onclick="handleLogout()">Sign out & Delete Account</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-layout">
+            <div class="compose-btn" onclick="openCompose()">
+                <span>✏️</span> <span>Compose</span>
+            </div>
+            <sidebar>
+                <div class="nav-item active" id="nav-inbox" onclick="switchFolder('inbox')">
+                    <span>📥 Inbox</span>
+                    <span id="inbox-count">1</span>
+                </div>
+                <div class="nav-item" id="nav-sent" onclick="switchFolder('sent')">
+                    <span>📤 Sent</span>
+                    <span id="sent-count">0</span>
+                </div>
+                <div class="nav-item" id="nav-drafts" onclick="switchFolder('drafts')">
+                    <span>📄 Drafts</span>
+                    <span id="drafts-count">0</span>
+                </div>
+            </sidebar>
+
+            <div class="content-area" id="main-content-area">
+                </div>
+        </div>
+    </div>
+
+    <div id="compose-modal" class="compose-modal hidden">
+        <div class="compose-header">
+            <span>New Message</span>
+            <span onclick="closeCompose()">✕</span>
+        </div>
+        <div class="compose-body">
+            <input type="text" id="compose-to" placeholder="To (e.g., user@tmail.com)">
+            <input type="text" id="compose-subject" placeholder="Subject">
+            <textarea id="compose-body-text" placeholder="Write your message..."></textarea>
+        </div>
+        <div class="compose-footer">
+            <span style="font-size: 13px; color: #5f6368; cursor: pointer;" onclick="saveDraft()">Save Draft</span>
+            <button class="btn-send" onclick="sendEmail()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const colors = ['#1a73e8', '#d93025', '#f29900', '#188038', '#9334e6', '#0097a7'];
+        
+        function getRandomColor(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            return colors[Math.abs(hash) % colors.length];
+        }
+
+        let currentUser = null;
+        let currentFolder = 'inbox';
+        let emails = {
+            inbox: [
+                { id: 1, sender: 'Tmail Team', subject: 'Welcome to Tmail!', snippet: 'Your secret tmail address has been successfully generated.', body: 'Welcome to Tmail!\n\nYour secret recovery address has been automatically set up as your username @tmail.com.' }
+            ],
+            sent: [],
+            drafts: []
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedUser = localStorage.getItem('tmail_user');
+            const savedEmails = localStorage.getItem('tmail_emails');
+            
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                if (savedEmails) {
+                    emails = JSON.parse(savedEmails);
+                }
+                loadApp(currentUser);
+            }
+        });
+
+        function handleSignup(event) {
+            event.preventDefault();
+            const username = document.getElementById('username-input').value.trim();
+            const password = document.getElementById('password-input').value;
+
+            if (!username || !password) return;
+
+            const lowerUser = username.toLowerCase();
+            const secretTmail = `${lowerUser}@tmail.com`;
+            const firstLetter = username.charAt(0).toUpperCase();
+            const avatarColor = getRandomColor(username);
+
+            currentUser = {
+                username: username,
+                tmail: secretTmail,
+                firstLetter: firstLetter,
+                color: avatarColor
+            };
+
+            emails = {
+                inbox: [
+                    { id: Date.now(), sender: 'Tmail Team', subject: 'Welcome to Tmail!', snippet: 'Your secret tmail address is ready to use.', body: `Welcome ${username}!\n\nYour secret Tmail address is ${secretTmail}. Use it to receive messages from anyone on the platform.` }
+                ],
+                sent: [],
+                drafts: []
+            };
+
+            localStorage.setItem('tmail_user', JSON.stringify(currentUser));
+            saveEmailStorage();
+            
+            document.getElementById('username-input').value = '';
+            document.getElementById('password-input').value = '';
+
+            loadApp(currentUser);
+        }
+
+        function loadApp(user) {
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('app-screen').classList.remove('hidden');
+
+            const avatar = document.getElementById('user-avatar');
+            avatar.style.backgroundColor = user.color;
+            avatar.innerText = user.firstLetter;
+
+            const menuAvatar = document.getElementById('menu-avatar-large');
+            menuAvatar.style.backgroundColor = user.color;
+            menuAvatar.innerText = user.firstLetter;
+
+            document.getElementById('menu-username-display').innerText = user.username;
+            document.getElementById('menu-email-display').innerText = user.tmail;
+
+            renderEmailList();
+            updateCounts();
+        }
+
+        function toggleMenu(event) {
+            event.stopPropagation();
+            const menu = document.getElementById('profile-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        window.addEventListener('click', () => {
+            const menu = document.getElementById('profile-menu');
+            if (menu && !menu.classList.contains('hidden')) {
+                menu.classList.add('hidden');
+            }
+        });
+
+        function handleLogout() {
+            localStorage.removeItem('tmail_user');
+            localStorage.removeItem('tmail_emails');
+            currentUser = null;
+            
+            document.getElementById('app-screen').classList.add('hidden');
+            document.getElementById('auth-screen').classList.remove('hidden');
+            document.getElementById('profile-menu').classList.add('hidden');
+        }
+
+        function switchFolder(folder) {
+            currentFolder = folder;
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById(`nav-${folder}`).classList.add('active');
+            renderEmailList();
+        }
+
+        function updateCounts() {
+            document.getElementById('inbox-count').innerText = emails.inbox.length;
+            document.getElementById('sent-count').innerText = emails.sent.length;
+            document.getElementById('drafts-count').innerText = emails.drafts.length;
+        }
+
+        function renderEmailList() {
+            const container = document.getElementById('main-content-area');
+            const folderList = emails[currentFolder];
+
+            if (folderList.length === 0) {
+                container.innerHTML = `<div class="email-list"><div class="empty-folder">Your ${currentFolder} is empty</div></div>`;
+                updateCounts();
+                return;
+            }
+
+            let html = '<div class="email-list">';
+            folderList.forEach((email, index) => {
+                const displaySender = currentFolder === 'sent' ? `To: ${email.recipient}` : email.sender;
+                html += `
+                    <div class="email-item" onclick="openEmail('${currentFolder}', ${index})">
+                        <span class="email-sender">${displaySender}</span>
+                        <span class="email-snippet"><b>${email.subject}</b> — ${email.snippet}</span>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+            updateCounts();
+        }
+
+        function openEmail(folder, index) {
+            const email = emails[folder][index];
+            const container = document.getElementById('main-content-area');
+
+            container.innerHTML = `
+                <button class="btn-back" onclick="renderEmailList()">← Back</button>
+                <div class="email-reader">
+                    <div class="reader-header">
+                        <div>
+                            <h2 style="font-size: 18px; margin-bottom: 4px;">${email.subject}</h2>
+                            <p style="color: #5f6368; font-size: 12px; word-break: break-all;">From: ${email.sender}<br>To: ${email.recipient || currentUser.tmail}</p>
+                        </div>
+                    </div>
+                    <div style="white-space: pre-line; font-size: 14px; line-height: 1.5; color: #202124;">${email.body}</div>
+                </div>
+            `;
+        }
+
+        function openCompose() {
+            document.getElementById('compose-modal').classList.remove('hidden');
+        }
+
+        function closeCompose() {
+            document.getElementById('compose-modal').classList.add('hidden');
+            document.getElementById('compose-to').value = '';
+            document.getElementById('compose-subject').value = '';
+            document.getElementById('compose-body-text').value = '';
+        }
+
+        function sendEmail() {
+            const recipient = document.getElementById('compose-to').value.trim();
+            const subject = document.getElementById('compose-subject').value.trim() || '(No Subject)';
+            const body = document.getElementById('compose-body-text').value.trim();
+
+            if (!recipient) {
+                alert('Please specify a recipient address.');
+                return;
+            }
+
+            const newEmail = {
+                id: Date.now(),
+                sender: currentUser.tmail,
+                recipient: recipient,
+                subject: subject,
+                snippet: body.substring(0, 60) + '...',
+                body: body
+            };
+
+            emails.sent.push(newEmail);
+            saveEmailStorage();
+            closeCompose();
+
+            if (currentFolder === 'sent') {
+                renderEmailList();
+            } else {
+                updateCounts();
+            }
+            alert('Message sent successfully!');
+        }
+
+        function saveDraft() {
+            const recipient = document.getElementById('compose-to').value.trim();
+            const subject = document.getElementById('compose-subject').value.trim() || '(No Subject)';
+            const body = document.getElementById('compose-body-text').value.trim();
+
+            const draftEmail = {
+                id: Date.now(),
+                sender: currentUser.tmail,
+                recipient: recipient || 'Draft recipient',
+                subject: subject,
+                snippet: body.substring(0, 60) + '...',
+                body: body
+            };
+
+            emails.drafts.push(draftEmail);
+            saveEmailStorage();
+            closeCompose();
+
+            if (currentFolder === 'drafts') {
+                renderEmailList();
+            } else {
+                updateCounts();
+            }
+            alert('Draft saved!');
+        }
+
+        function saveEmailStorage() {
+            localStorage.setItem('tmail_emails', JSON.stringify(emails));
+        }
+    </script>
+</body>
+</html>
