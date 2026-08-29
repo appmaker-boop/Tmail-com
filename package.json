@@ -1,0 +1,12 @@
+{
+  "name": "tmail-app",
+  "version": "1.0.0",
+  "description": "Node.js Tmail Web App",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
