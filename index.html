@@ -235,7 +235,6 @@
             position: relative;
         }
 
-        /* Sidebar behaves as a bottom navigation bar on mobile */
         sidebar {
             position: fixed;
             bottom: 0;
@@ -299,7 +298,7 @@
             flex: 1;
             background-color: #f8f9fa;
             padding: 12px;
-            padding-bottom: 75px; /* clear bottom navigation */
+            padding-bottom: 75px;
             overflow-y: auto;
             width: 100%;
         }
@@ -349,7 +348,7 @@
             font-size: 14px;
         }
 
-        /* --- COMPOSE MODAL POPUP (FULLSCREEN ON MOBILE) --- */
+        /* --- COMPOSE MODAL POPUP --- */
         .compose-modal {
             position: fixed;
             top: 0;
@@ -566,7 +565,7 @@
             <sidebar>
                 <div class="nav-item active" id="nav-inbox" onclick="switchFolder('inbox')">
                     <span>📥 Inbox</span>
-                    <span id="inbox-count">1</span>
+                    <span id="inbox-count">0</span>
                 </div>
                 <div class="nav-item" id="nav-sent" onclick="switchFolder('sent')">
                     <span>📤 Sent</span>
@@ -589,7 +588,7 @@
             <span onclick="closeCompose()">✕</span>
         </div>
         <div class="compose-body">
-            <input type="text" id="compose-to" placeholder="To (e.g., user@tmail.com)">
+            <input type="text" id="compose-to" placeholder="To (e.g., friend@tmail.com)">
             <input type="text" id="compose-subject" placeholder="Subject">
             <textarea id="compose-body-text" placeholder="Write your message..."></textarea>
         </div>
@@ -612,23 +611,11 @@
 
         let currentUser = null;
         let currentFolder = 'inbox';
-        let emails = {
-            inbox: [
-                { id: 1, sender: 'Tmail Team', subject: 'Welcome to Tmail!', snippet: 'Your secret tmail address has been successfully generated.', body: 'Welcome to Tmail!\n\nYour secret recovery address has been automatically set up as your username @tmail.com.' }
-            ],
-            sent: [],
-            drafts: []
-        };
 
         window.addEventListener('DOMContentLoaded', () => {
-            const savedUser = localStorage.getItem('tmail_user');
-            const savedEmails = localStorage.getItem('tmail_emails');
-            
+            const savedUser = localStorage.getItem('tmail_current_user');
             if (savedUser) {
                 currentUser = JSON.parse(savedUser);
-                if (savedEmails) {
-                    emails = JSON.parse(savedEmails);
-                }
                 loadApp(currentUser);
             }
         });
@@ -652,16 +639,20 @@
                 color: avatarColor
             };
 
-            emails = {
-                inbox: [
-                    { id: Date.now(), sender: 'Tmail Team', subject: 'Welcome to Tmail!', snippet: 'Your secret tmail address is ready to use.', body: `Welcome ${username}!\n\nYour secret Tmail address is ${secretTmail}. Use it to receive messages from anyone on the platform.` }
-                ],
-                sent: [],
-                drafts: []
-            };
+            // Check if user mail database exists, if not give them a welcome message
+            let allMailboxes = JSON.parse(localStorage.getItem('tmail_global_mailboxes')) || {};
+            if (!allMailboxes[secretTmail]) {
+                allMailboxes[secretTmail] = {
+                    inbox: [
+                        { id: Date.now(), sender: 'Tmail Team', recipient: secretTmail, subject: 'Welcome to Tmail!', snippet: 'Your secret tmail address is ready to use.', body: `Welcome ${username}!\n\nYour secret Tmail address is ${secretTmail}. Anyone on Tmail can message you using this address.` }
+                    ],
+                    sent: [],
+                    drafts: []
+                };
+                localStorage.setItem('tmail_global_mailboxes', JSON.stringify(allMailboxes));
+            }
 
-            localStorage.setItem('tmail_user', JSON.stringify(currentUser));
-            saveEmailStorage();
+            localStorage.setItem('tmail_current_user', JSON.stringify(currentUser));
             
             document.getElementById('username-input').value = '';
             document.getElementById('password-input').value = '';
@@ -702,8 +693,7 @@
         });
 
         function handleLogout() {
-            localStorage.removeItem('tmail_user');
-            localStorage.removeItem('tmail_emails');
+            localStorage.removeItem('tmail_current_user');
             currentUser = null;
             
             document.getElementById('app-screen').classList.add('hidden');
@@ -718,15 +708,32 @@
             renderEmailList();
         }
 
+        function getMyMailbox() {
+            let allMailboxes = JSON.parse(localStorage.getItem('tmail_global_mailboxes')) || {};
+            if (!currentUser) return { inbox: [], sent: [], drafts: [] };
+            if (!allMailboxes[currentUser.tmail]) {
+                allMailboxes[currentUser.tmail] = { inbox: [], sent: [], drafts: [] };
+            }
+            return allMailboxes[currentUser.tmail];
+        }
+
+        function saveMyMailbox(mailbox) {
+            let allMailboxes = JSON.parse(localStorage.getItem('tmail_global_mailboxes')) || {};
+            allMailboxes[currentUser.tmail] = mailbox;
+            localStorage.setItem('tmail_global_mailboxes', JSON.stringify(allMailboxes));
+        }
+
         function updateCounts() {
-            document.getElementById('inbox-count').innerText = emails.inbox.length;
-            document.getElementById('sent-count').innerText = emails.sent.length;
-            document.getElementById('drafts-count').innerText = emails.drafts.length;
+            const mailbox = getMyMailbox();
+            document.getElementById('inbox-count').innerText = mailbox.inbox.length;
+            document.getElementById('sent-count').innerText = mailbox.sent.length;
+            document.getElementById('drafts-count').innerText = mailbox.drafts.length;
         }
 
         function renderEmailList() {
             const container = document.getElementById('main-content-area');
-            const folderList = emails[currentFolder];
+            const mailbox = getMyMailbox();
+            const folderList = mailbox[currentFolder] || [];
 
             if (folderList.length === 0) {
                 container.innerHTML = `<div class="email-list"><div class="empty-folder">Your ${currentFolder} is empty</div></div>`;
@@ -750,7 +757,8 @@
         }
 
         function openEmail(folder, index) {
-            const email = emails[folder][index];
+            const mailbox = getMyMailbox();
+            const email = mailbox[folder][index];
             const container = document.getElementById('main-content-area');
 
             container.innerHTML = `
@@ -759,7 +767,7 @@
                     <div class="reader-header">
                         <div>
                             <h2 style="font-size: 18px; margin-bottom: 4px;">${email.subject}</h2>
-                            <p style="color: #5f6368; font-size: 12px; word-break: break-all;">From: ${email.sender}<br>To: ${email.recipient || currentUser.tmail}</p>
+                            <p style="color: #5f6368; font-size: 12px; word-break: break-all;">From: ${email.sender}<br>To: ${email.recipient}</p>
                         </div>
                     </div>
                     <div style="white-space: pre-line; font-size: 14px; line-height: 1.5; color: #202124;">${email.body}</div>
@@ -779,7 +787,7 @@
         }
 
         function sendEmail() {
-            const recipient = document.getElementById('compose-to').value.trim();
+            const recipient = document.getElementById('compose-to').value.trim().toLowerCase();
             const subject = document.getElementById('compose-subject').value.trim() || '(No Subject)';
             const body = document.getElementById('compose-body-text').value.trim();
 
@@ -797,15 +805,24 @@
                 body: body
             };
 
-            emails.sent.push(newEmail);
-            saveEmailStorage();
-            closeCompose();
+            // 1. Save to current user's 'sent' folder
+            let mailbox = getMyMailbox();
+            mailbox.sent.push(newEmail);
+            saveMyMailbox(mailbox);
 
-            if (currentFolder === 'sent') {
-                renderEmailList();
+            // 2. Deliver to recipient's global inbox if the target mailbox exists
+            let allMailboxes = JSON.parse(localStorage.getItem('tmail_global_mailboxes')) || {};
+            if (allMailboxes[recipient]) {
+                allMailboxes[recipient].inbox.push(newEmail);
+                localStorage.setItem('tmail_global_mailboxes', JSON.stringify(allMailboxes));
             } else {
-                updateCounts();
+                // If target account doesn't exist yet, queue it up so it appears when they create it
+                allMailboxes[recipient] = { inbox: [newEmail], sent: [], drafts: [] };
+                localStorage.setItem('tmail_global_mailboxes', JSON.stringify(allMailboxes));
             }
+
+            closeCompose();
+            renderEmailList();
             alert('Message sent successfully!');
         }
 
@@ -823,20 +840,13 @@
                 body: body
             };
 
-            emails.drafts.push(draftEmail);
-            saveEmailStorage();
+            let mailbox = getMyMailbox();
+            mailbox.drafts.push(draftEmail);
+            saveMyMailbox(mailbox);
+
             closeCompose();
-
-            if (currentFolder === 'drafts') {
-                renderEmailList();
-            } else {
-                updateCounts();
-            }
+            renderEmailList();
             alert('Draft saved!');
-        }
-
-        function saveEmailStorage() {
-            localStorage.setItem('tmail_emails', JSON.stringify(emails));
         }
     </script>
 </body>
